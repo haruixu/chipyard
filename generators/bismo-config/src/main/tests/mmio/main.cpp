@@ -20,24 +20,27 @@
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include "rocc.h"
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 #include "BISMOTests.hpp"
 #include "BitSerialMatMulAccel.hpp"
+#include "rocc.h"
 
 #define SYS_paddr_to_vaddr 337
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]) {
+  cout << "==> starting" << endl;
   uintptr_t mem_offset = syscall(SYS_paddr_to_vaddr, 0x70002000, 0x200);
+  cout << "mem_offset done" << endl;
   BitSerialMatMulAccelDriver *acc = new BitSerialMatMulAccelDriver(mem_offset);
+  cout << "init acc done" << endl;
   acc->print_hwcfg_summary();
 
   bool all_OK = true;
@@ -47,15 +50,18 @@ int main(int argc, char const *argv[])
   all_OK &= test_binary_offchip_multitile(acc);
   all_OK &= test_binary_offchip_widerows_multitile(acc);
 
-  if (all_OK)
-  {
+  if (all_OK) {
     cout << "All tests passed succesfully" << endl;
-  }
-  else
-  {
+  } else {
     cout << "Some tests failed!" << endl;
   }
 
   delete acc;
   return 0;
+}
+
+ssize_t getrandom(void *buf, size_t buflen, unsigned int flags) {
+  // Fake a success or return -1 with ENOSYS (Function not implemented)
+  // depending on how your runtime handles the error gracefully.
+  return buflen;
 }

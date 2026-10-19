@@ -1,19 +1,20 @@
-.DEFAULT_GOAL := spike
-MMIO_SIM_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig
-MMIO_SIM_DEBUG_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig-debug
+MMIO_SIM_PATH = ../../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig # had to move back a dir to match the changes in the make goals
+MMIO_SIM_DEBUG_PATH = ../../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig-debug
 ROCC_SIM_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig
 ROCC_SIM_DEBUG_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig-debug
 
 mmio-sw:
-	cd mmio
-	riscv64-unknown-linux-gnu-g++ -static main.cpp -o main
+	cd mmio && riscv64-linux-gnu-g++ -static main.cpp -o main
 	test -d mmio-out || mkdir mmio-out
-	time $(MMIO_SIM_PATH) --cycle-count --vcd=mmio-out/bismo-debug-clock.vcd pk ./main 2>&1 | tee mmio-out/bismo-log-clock.txt
+	cd mmio && time $(MMIO_SIM_PATH) --cycle-count pk ./main 2>&1 | tee ../mmio-out/bismo-log-clock.txt
+test:
+	cd mmio && riscv64-linux-gnu-g++ -static test.cpp -o test
+	test -d mmio-out-test || mkdir mmio-out-test
+	cd mmio && time $(MMIO_SIM_DEBUG_PATH) --cycle-count pk ./test 2>&1 | tee ../mmio-out-test/bismo-log-clock.txt
 mmio-sw-debug:
-	cd mmio
-	riscv64-unknown-linux-gnu-g++ -static main.cpp -o main
+	cd mmio && riscv64-linux-gnu-g++ -static main.cpp -o main
 	test -d mmio-debug-out || mkdir mmio-debug-out
-	time $(MMIO_SIM_DEBUG_PATH) --cycle-count --vcd=mmio-debug-out/bismo-debug-clock.vcd pk ./main 2>&1 | tee mmio-debug-out/bismo-log-clock.txt
+	cd mmio && time $(MMIO_SIM_DEBUG_PATH) --cycle-count --vcd=../mmio-debug-out/bismo-debug-clock.vcd pk ./main 2>&1 | tee ../mmio-debug-out/bismo-log-clock.txt
 
 rocc-sw:
 	cd rocc
@@ -21,7 +22,7 @@ rocc-sw:
 	test -d rocc-out || mkdir rocc-out
 	time $(ROCC_SIM_PATH) --cycle-count --vcd=rocc-out/bismo-debug-clock.vcd pk ./main 2>&1 | tee rocc-out/bismo-log-clock.txt
 
-rocc-sw-debug:chipyard/generators/bismo-config/src/main/tests/Makefile
+rocc-sw-debug:
 	cd rocc
 	riscv64-unknown-linux-gnu-g++ -static main.cpp -o main
 	test -d rocc-debug-out || mkdir rocc-debug-out
