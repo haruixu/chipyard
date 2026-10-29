@@ -138,3 +138,6 @@
 	url = https://github.com/Vetleh/riscv-pk.git
 [submodule "riscv-pk"]
 	url = https://github.com/Vetleh/riscv-pk.git
+[submodule "generators/bismo-config/src/main/tests/mmio/gemmbitserial"]
+	path = generators/bismo-config/src/main/tests/mmio/gemmbitserial
+	url = https://github.com/maltanar/gemmbitserial
