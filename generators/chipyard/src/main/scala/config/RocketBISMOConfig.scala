@@ -16,3 +16,8 @@ class BISMORoCCRocketConfig extends Config(
   new freechips.rocketchip.subsystem.WithNBigCores(1) ++
   new chipyard.config.AbstractConfig)
 // DOC include end: BISMOTLRocketConfig
+
+class TinyBISMOConfig extends Config( // tiny rocket and normal bismo
+  new bismoconfig.WithBISMOTL() ++
+  new freechips.rocketchip.subsystem.With1TinyCore ++ 
+  new chipyard.config.AbstractConfig)

@@ -42,13 +42,18 @@ int main(int argc, char const *argv[]) {
   BitSerialMatMulAccelDriver *acc = new BitSerialMatMulAccelDriver(mem_offset);
   cout << "init acc done" << endl;
   acc->print_hwcfg_summary();
+  cout << "printed hardware summary" << endl;
 
   bool all_OK = true;
   // all_OK &= test_binary_offchip_widerows_multitile(acc);
   all_OK &= test_binary_onchip_onetile(acc);
+  cout << "first test done" << endl;
   all_OK &= test_binary_onchip_multitile(acc);
+  cout << "second test done" << endl;
   all_OK &= test_binary_offchip_multitile(acc);
+  cout << "third test done" << endl;
   all_OK &= test_binary_offchip_widerows_multitile(acc);
+  cout << "fourth test done" << endl;
 
   if (all_OK) {
     cout << "All tests passed succesfully" << endl;

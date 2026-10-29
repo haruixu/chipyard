@@ -161,6 +161,7 @@ public:
     update_hw_cfg();
     cout << "updated hw cfg" << endl;
     measure_fclk();
+    cout << "measured fclk" << endl;
   }
 
   void perf_set_cc_enable(bool e) { m_accel->set_perf_cc_enable(e ? 1 : 0); }
@@ -173,15 +174,20 @@ public:
   void measure_fclk() {
     int n = CLOCKS_PER_SEC / 100;
     uint32_t cc_start = perf_get_cc();
+    cout << "cc_start: " << cc_start << endl;
     perf_set_cc_enable(true);
     // sleep for one second of CPU time
     clock_t t1 = clock();
+    cout << "clock start: " << t1 << endl;
     while (clock() <= t1 + n && clock() >= t1)
       ;
+    cout << "finished while loop with n=" << n << endl;
     perf_set_cc_enable(false);
     uint32_t cc_end = perf_get_cc();
+    cout << "clock end: " << cc_end << endl;
     // million ticks per second = fclk in MHz
     m_fclk = (float)(cc_end - cc_start) / 1000000.0;
+    cout << "m_fclk" << m_fclk << endl;
   }
 
   float fclk_MHz() const { return m_fclk; }
