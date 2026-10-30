@@ -3,6 +3,7 @@ MMIO_SIM_TINY_PATH = ../../../../../../sims/verilator/simulator-chipyard-TinyBIS
 MMIO_SIM_DEBUG_PATH = ../../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig-debug
 ROCC_SIM_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig
 ROCC_SIM_DEBUG_PATH = ../../../../../sims/verilator/simulator-chipyard-BISMOTLRocketConfig-debug
+TEST_PATH = ../../../../../tests
 
 GCC=riscv64-unknown-linux-gnu-g++
 # GCC=riscv64-linux-gnu-g++
@@ -43,3 +44,7 @@ rocc-sw-debug:
 	riscv64-unknown-linux-gnu-g++ -static main.cpp -o main
 	test -d rocc-debug-out || mkdir rocc-debug-out
 	time $(ROCC_SIM_DEBUG_PATH) --cycle-count --vcd=rocc-debug-out/out/bismo-debug-clock.vcd pk ./main 2>&1 | tee rocc-debug-out/bismo-log-clock.txt
+
+simple-test: 
+	cd $(TEST_PATH) && $(MMIO_SIM_DEBUG_PATH) run-binary BINARY="bismo.riscv"
+	

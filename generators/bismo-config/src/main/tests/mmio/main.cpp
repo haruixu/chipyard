@@ -64,9 +64,3 @@ int main(int argc, char const *argv[]) {
   delete acc;
   return 0;
 }
-
-ssize_t getrandom(void *buf, size_t buflen, unsigned int flags) {
-  // Fake a success or return -1 with ENOSYS (Function not implemented)
-  // depending on how your runtime handles the error gracefully.
-  return buflen;
-}
