@@ -20,18 +20,19 @@
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <cstring>
-#include <string>
 #include <iostream>
+#include <string>
 #include <vector>
 using namespace std;
 #include "BitSerialMatMulAccelDriver.hpp"
@@ -42,38 +43,42 @@ using namespace gemmbitserial;
 
 // BISMO top-level tests
 
-bool test(
-    string testName,
-    BitSerialMatMulAccelDriver *acc,
-    size_t nrows_lhs, size_t nrows_rhs, size_t ncols, size_t nbits_lhs = 1,
-    size_t nbits_rhs = 1, bool sgn_lhs = false, bool sgn_rhs = false)
-{
+bool test(string testName, BitSerialMatMulAccelDriver *acc, size_t nrows_lhs,
+          size_t nrows_rhs, size_t ncols, size_t nbits_lhs = 1,
+          size_t nbits_rhs = 1, bool sgn_lhs = false, bool sgn_rhs = false) {
   uint8_t *lhs = new uint8_t[nrows_lhs * ncols];
   uint8_t *rhs = new uint8_t[nrows_rhs * ncols];
   generateRandomVector(nbits_lhs, nrows_lhs * ncols, lhs);
   generateRandomVector(nbits_rhs, nrows_rhs * ncols, rhs);
+  cout << "lhs: " << lhs << endl;
+  cout << "rhs: " << rhs << endl;
   GEMMContext ctx = acc->allocGEMMContext(
       nrows_lhs, ncols, nrows_rhs, nbits_lhs, nbits_rhs, sgn_lhs, sgn_rhs);
+  cout << "got gemm context" << endl;
   ctx.lhs.importRegular(lhs);
   ctx.rhs.importRegular(rhs);
   gemmBitSerial(ctx);
   int32_t *accel_res = new int32_t[nrows_lhs * nrows_rhs];
 
-  BitSerialMatMulExecutor *runner = new BitSerialMatMulExecutor(
-      testName, ctx, acc);
+  cout << "setting up test: " << testName << " with shape (" << nrows_lhs << ", "
+       << ncols << ", " << nrows_rhs << ")" << endl;
+  BitSerialMatMulExecutor *runner =
+      new BitSerialMatMulExecutor(testName, ctx, acc);
+  cout << "got runner" << endl;
   runner->setLHS(ctx.lhs);
   runner->setRHS(ctx.rhs);
+  cout << "starting run" << endl;
   runner->run();
   runner->getRes(accel_res);
+  cout << "got result into accel_res" << endl;
 
-  int res = memcmp(ctx.res, accel_res, nrows_lhs * nrows_rhs * sizeof(ResultType));
-  if (res == 0)
-  {
+  int res =
+      memcmp(ctx.res, accel_res, nrows_lhs * nrows_rhs * sizeof(ResultType));
+  cout << "res: " << res << endl;
+  if (res == 0) {
     cout << "Test succeeded (" << testName << ")" << endl;
     runner->write_json();
-  }
-  else
-  {
+  } else {
     runner->printPerfSummary();
     runner->printPerfDetails();
     cout << "Test failed (" << testName << ")" << endl;
@@ -89,98 +94,88 @@ bool test(
   return res == 0;
 }
 
-bool test_binary_onchip_onetile(
-    BitSerialMatMulAccelDriver *acc)
-{
+bool test_binary_onchip_onetile(BitSerialMatMulAccelDriver *acc) {
   bool all_OK = true;
   vector<size_t> cols_div_factor{2, 4, 8};
   // vector<size_t> cols_div_factor{2, 4};
-  for (auto &col_div : cols_div_factor)
-  {
-    all_OK &= test(
-        "binary_onchip_onetile_coldiv" + to_string(col_div), acc,
-        acc->hwcfg().dpaDimLHS, acc->hwcfg().dpaDimRHS,
-        acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem / col_div);
+  cout << "starting first test: onchip onetile" << endl;
+  for (auto &col_div : cols_div_factor) {
+    cout << "+ iterating column division " << col_div << endl;
+    all_OK &= test("binary_onchip_onetile_coldiv" + to_string(col_div), acc,
+                   acc->hwcfg().dpaDimLHS, acc->hwcfg().dpaDimRHS,
+                   acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem /
+                       col_div);
   }
-
+  cout << "finished first test: onchip onetile" << endl;
   return all_OK;
 }
 
-bool test_binary_size_independent(
-    BitSerialMatMulAccelDriver *acc)
-{
+bool test_binary_size_independent(BitSerialMatMulAccelDriver *acc) {
   bool all_OK = true;
-  all_OK &= test(
-      "binary_size_independent_",
-      acc,
-      17, 7, 11);
+  all_OK &= test("binary_size_independent_", acc, 17, 7, 11);
 
   return all_OK;
 }
 
-bool test_binary_onchip_multitile(
-    BitSerialMatMulAccelDriver *acc)
-{
+bool test_binary_onchip_multitile(BitSerialMatMulAccelDriver *acc) {
   bool all_OK = true;
   vector<size_t> stripes{2, /*3,*/ 4};
-  for (auto &lhs_stripes : stripes)
-  {
-    for (auto &rhs_stripes : stripes)
-    {
-      size_t ncols = acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem / (lhs_stripes * rhs_stripes);
+  cout << "starting second test: onchip multitile" << endl;
+  for (auto &lhs_stripes : stripes) {
+    for (auto &rhs_stripes : stripes) {
+      cout << "+ iterating (lhs, rhs)=(" << lhs_stripes << ", " << rhs_stripes << ")" << endl;
+      size_t ncols = acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem /
+                     (lhs_stripes * rhs_stripes);
       size_t nrows_lhs = lhs_stripes * acc->hwcfg().dpaDimLHS;
       size_t nrows_rhs = rhs_stripes * acc->hwcfg().dpaDimRHS;
-      all_OK &= test(
-          "binary_onchip_multitile_" +
-              to_string(nrows_lhs) + "x" + to_string(ncols) + "x" + to_string(nrows_rhs),
-          acc, nrows_lhs, nrows_rhs, ncols);
+      all_OK &= test("binary_onchip_multitile_" + to_string(nrows_lhs) + "x" +
+                         to_string(ncols) + "x" + to_string(nrows_rhs),
+                     acc, nrows_lhs, nrows_rhs, ncols);
     }
   }
+  cout << "finished second test: onchip multitile" << endl;
   return all_OK;
 }
 
-bool test_binary_offchip_multitile(
-    BitSerialMatMulAccelDriver *acc)
-{
+bool test_binary_offchip_multitile(BitSerialMatMulAccelDriver *acc) {
   bool all_OK = true;
   vector<size_t> stripes{2, /*3,*/ 4};
-  for (auto &lhs_stripes : stripes)
-  {
-    for (auto &rhs_stripes : stripes)
-    {
+  cout << "starting third test: offchip multitile" << endl;
+  for (auto &lhs_stripes : stripes) {
+    for (auto &rhs_stripes : stripes) {
+      cout << "+ iterating (lhs, rhs)=(" << lhs_stripes << ", " << rhs_stripes << ")" << endl;
       size_t ncols = acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem;
       size_t nrows_lhs = lhs_stripes * acc->hwcfg().dpaDimLHS;
       size_t nrows_rhs = rhs_stripes * acc->hwcfg().dpaDimRHS;
-      all_OK &= test(
-          "binary_offchip_multitile_" +
-              to_string(nrows_lhs) + "x" + to_string(ncols) + "x" + to_string(nrows_rhs),
-          acc, nrows_lhs, nrows_rhs, ncols);
+      all_OK &= test("binary_offchip_multitile_" + to_string(nrows_lhs) + "x" +
+                         to_string(ncols) + "x" + to_string(nrows_rhs),
+                     acc, nrows_lhs, nrows_rhs, ncols);
     }
   }
+  cout << "finished third test: offchip multitile" << endl;
   return all_OK;
 }
 
-bool test_binary_offchip_widerows_multitile(
-    BitSerialMatMulAccelDriver *acc)
-{
+bool test_binary_offchip_widerows_multitile(BitSerialMatMulAccelDriver *acc) {
   bool all_OK = true;
   vector<size_t> lr_stripes{1, 2, 4};
   vector<size_t> z_stripes{2, 4};
-  for (auto &lhs_stripe : lr_stripes)
-  {
-    for (auto &rhs_stripe : lr_stripes)
-    {
-      for (auto &z_stripe : z_stripes)
-      {
-        size_t ncols = acc->hwcfg().dpaDimCommon * acc->hwcfg().lhsEntriesPerMem * z_stripe;
+  cout << "starting fourth test: offchip widerows multitile" << endl;
+  for (auto &lhs_stripe : lr_stripes) {
+    for (auto &rhs_stripe : lr_stripes) {
+      for (auto &z_stripe : z_stripes) {
+        cout << "+ iterating (lhs, rhs, z)=(" << lhs_stripe << ", " << rhs_stripe << ", " << z_stripe << ")" << endl;
+        size_t ncols = acc->hwcfg().dpaDimCommon *
+                       acc->hwcfg().lhsEntriesPerMem * z_stripe;
         size_t nrows_lhs = lhs_stripe * acc->hwcfg().dpaDimLHS;
         size_t nrows_rhs = rhs_stripe * acc->hwcfg().dpaDimRHS;
-        all_OK &= test(
-            "test_binary_offchip_widerows_multitile_" +
-                to_string(nrows_lhs) + "x" + to_string(ncols) + "x" + to_string(nrows_rhs),
-            acc, nrows_lhs, nrows_rhs, ncols);
+        all_OK &= test("test_binary_offchip_widerows_multitile_" +
+                           to_string(nrows_lhs) + "x" + to_string(ncols) + "x" +
+                           to_string(nrows_rhs),
+                       acc, nrows_lhs, nrows_rhs, ncols);
       }
     }
   }
+  cout << "finished fourth test: offchip widerows multitile" << endl;
   return all_OK;
 }
